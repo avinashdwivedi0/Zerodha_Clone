@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Signup.css";
 
-const REACT_APP_DASHBOARD_URL = "https://zerodha-dashboard-mewz.onrender.com";
+const REACT_APP_DASHBOARD_URL = "https://zerodha-dashboard-i5gh.onrender.com";
 const REACT_APP_FRONTEND_URL = "https://zerodha-frontend-y8my.onrender.com";
 
 
