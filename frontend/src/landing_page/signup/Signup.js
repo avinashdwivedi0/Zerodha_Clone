@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./Signup.css";
 
-const DASHBOARD_URL = "http://localhost:3001";
-const FRONTEND_SIGNUP_URL = "http://localhost:3000/signup";
+const REACT_APP_DASHBOARD_URL = "https://zerodha-dashboard-mewz.onrender.com";
+const REACT_APP_FRONTEND_URL = "https://zerodha-frontend-y8my.onrender.com";
+
 
 const investmentOptions = [
   {
@@ -94,13 +95,13 @@ const Signup = () => {
     localStorage.setItem("zerodhaUser", JSON.stringify(userData));
     setUser(userData);
     setMobile("");
-    window.location.href = DASHBOARD_URL;
+    window.location.href = REACT_APP_DASHBOARD_URL;
   };
 
   const handleLogout = () => {
     localStorage.removeItem("zerodhaUser");
     setUser(null);
-    window.location.href = FRONTEND_SIGNUP_URL;
+    window.location.href = REACT_APP_FRONTEND_URL;
   };
 
   return (
