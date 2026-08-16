@@ -95,7 +95,7 @@ const Signup = () => {
     localStorage.setItem("zerodhaUser", JSON.stringify(userData));
     setUser(userData);
     setMobile("");
-    window.location.href = REACT_APP_DASHBOARD_URL;
+    window.location.href = REACT_APP_DASHBOARD_URL/signup;
   };
 
   const handleLogout = () => {
