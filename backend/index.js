@@ -3,6 +3,14 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const crypto = require("node:crypto");
+const { promisify } = require("node:util");
+const dns = require("node:dns");
+
+// The local resolver on this machine refuses MongoDB Atlas SRV records.
+if (process.env.NODE_ENV !== "production") {
+  dns.setServers(["1.1.1.1", "8.8.8.8"]);
+}
 
 const { HoldingsModel } = require("./model/HoldingsModel");
 const { PositionsModel } = require("./model/PositionsModel");
@@ -11,10 +19,42 @@ const { UserModel } = require("./model/UserModel");
 
 const PORT = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
+const scrypt = promisify(crypto.scrypt);
+
+const hashPassword = async (password) => {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = (await scrypt(password, salt, 64)).toString("hex");
+  return `${salt}:${hash}`;
+};
+
+const verifyPassword = async (password, savedPassword) => {
+  const [salt, savedHash] = savedPassword.split(":");
+  if (!salt || !savedHash) return false;
+
+  const inputHash = (await scrypt(password, salt, 64)).toString("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(savedHash, "hex"),
+    Buffer.from(inputHash, "hex")
+  );
+};
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || [
+  "http://localhost:3001",
+  "http://localhost:3000",
+  "https://zerodha-frontend-y8my.onrender.com",
+  "https://zerodha-dashboard-i5gh.onrender.com",
+].join(","))
+  .split(",")
+  .map((origin) => origin.trim());
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Origin is not allowed by CORS"));
+  },
+}));
 app.use(express.json());
 
 app.get("/addHoldings", async (req, res) => {
@@ -226,7 +266,7 @@ app.post("/signup", async (req, res) => {
       fullName,
       email,
       mobile,
-      password,
+      password: await hashPassword(password),
       pan,
       city,
     });
@@ -243,6 +283,9 @@ app.post("/signup", async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "User already exists" });
+    }
     return res.status(500).json({ message: "Signup failed" });
   }
 });
@@ -260,7 +303,7 @@ app.post("/login", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.password !== password) {
+    if (!(await verifyPassword(password, user.password))) {
       return res.status(401).json({ message: "Invalid password" });
     }
 

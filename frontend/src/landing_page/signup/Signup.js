@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./Signup.css";
 
-const REACT_APP_DASHBOARD_URL = "https://zerodha-dashboard-i5gh.onrender.com";
-const REACT_APP_FRONTEND_URL = "https://zerodha-frontend-y8my.onrender.com";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3002";
+const DASHBOARD_URL =
+  process.env.REACT_APP_DASHBOARD_URL || "http://localhost:3000";
 
 const investmentOptions = [
   {
@@ -63,45 +65,47 @@ const faqs = [
 ];
 
 const Signup = () => {
-  const [mobile, setMobile] = useState("");
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem("zerodhaUser");
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch (error) {
-      return null;
-    }
+  const [formData, setFormData] = useState({
+    fullName: "", email: "", mobile: "", password: "", pan: "", city: "",
   });
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem("zerodhaUser");
-      setUser(savedUser ? JSON.parse(savedUser) : null);
-    } catch (error) {
-      setUser(null);
-    }
-  }, []);
-
-  const handleGetOtp = (event) => {
-    event.preventDefault();
-    if (!mobile.trim()) return;
-
-    const userData = {
-      fullName: "Zerodha User",
-      email: `${mobile}@zerodha.local`,
-      mobile,
-    };
-
-    localStorage.setItem("zerodhaUser", JSON.stringify(userData));
-    setUser(userData);
-    setMobile("");
-    window.location.href = REACT_APP_DASHBOARD_URL/signup;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("zerodhaUser");
-    setUser(null);
-    window.location.href = REACT_APP_FRONTEND_URL;
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    setError("");
+    if (!/^\d{10}$/.test(formData.mobile.trim())) {
+      setError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${API_URL}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          mobile: formData.mobile.trim(),
+          pan: formData.pan.trim().toUpperCase(),
+          city: formData.city.trim(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to create your account.");
+      localStorage.setItem("zerodhaUser", JSON.stringify(data.user));
+      window.location.assign(DASHBOARD_URL);
+    } catch (requestError) {
+      setError(requestError.message || "Unable to connect to the server.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -145,6 +149,33 @@ const Signup = () => {
           </div>
 
           <div className="signup-form">
+            <h2>Signup now</h2>
+            <p>Open your demat and trading account.</p>
+            <form onSubmit={handleSignup}>
+              <div className="signup-fields">
+                <input name="fullName" placeholder="Full name" value={formData.fullName} onChange={handleChange} required />
+                <input name="email" type="email" placeholder="Email address" value={formData.email} onChange={handleChange} required />
+                <div className="mobile-input">
+                  <span className="india">+91</span>
+                  <input name="mobile" type="tel" inputMode="numeric" placeholder="10-digit mobile number" value={formData.mobile} onChange={handleChange} required />
+                </div>
+                <input name="password" type="password" placeholder="Password (minimum 8 characters)" value={formData.password} onChange={handleChange} minLength="8" required />
+                <input name="pan" placeholder="PAN (optional)" value={formData.pan} onChange={handleChange} />
+                <input name="city" placeholder="City (optional)" value={formData.city} onChange={handleChange} />
+              </div>
+              {error && <p className="form-error" role="alert">{error}</p>}
+              <button type="submit" className="primary-btn" disabled={isSubmitting}>
+                {isSubmitting ? "Creating account..." : "Create account"}
+              </button>
+            </form>
+            <p className="terms">
+              By proceeding, you agree to the Zerodha{" "}
+              <a href="/support">terms & privacy policy</a>.
+            </p>
+            <p className="existing">
+              Already have an account? <Link to="/login">Log in</Link>
+            </p>
+            {/* Legacy mock sign-up UI retained only as a reference.
             {user ? (
               <div className="account-panel">
                 <h2>Welcome back</h2>
@@ -208,6 +239,7 @@ const Signup = () => {
                 </p>
               </>
             )}
+            */}
           </div>
         </div>
       </section>
