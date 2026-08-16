@@ -161,7 +161,7 @@ const Signup = () => {
                       type="button"
                       className="primary-btn account-button"
                       onClick={() => {
-                        window.location.href = DASHBOARD_URL;
+                        window.location.href = REACT_APP_DASHBOARD_URL;
                       }}
                     >
                       Account
