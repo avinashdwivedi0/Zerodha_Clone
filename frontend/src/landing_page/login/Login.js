@@ -25,6 +25,7 @@ const Login = () => {
       if (!response.ok) throw new Error(data.message || "Unable to log in.");
 
       localStorage.setItem("zerodhaUser", JSON.stringify(data.user));
+      window.name = `zerodha-account:${JSON.stringify(data.user)}`;
       window.location.assign(DASHBOARD_URL);
     } catch (requestError) {
       setError(requestError.message || "Unable to connect to the server.");

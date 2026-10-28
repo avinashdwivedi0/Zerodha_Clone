@@ -99,6 +99,7 @@ const Signup = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to create your account.");
       localStorage.setItem("zerodhaUser", JSON.stringify(data.user));
+      window.name = `zerodha-account:${JSON.stringify(data.user)}`;
       window.location.assign(DASHBOARD_URL);
     } catch (requestError) {
       setError(requestError.message || "Unable to connect to the server.");
@@ -191,6 +192,7 @@ const Signup = () => {
                       type="button"
                       className="primary-btn account-button"
                       onClick={() => {
+                        window.name = `zerodha-account:${JSON.stringify(user)}`;
                         window.location.href = REACT_APP_DASHBOARD_URL;
                       }}
                     >
